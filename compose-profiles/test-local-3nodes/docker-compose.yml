@@ -1,0 +1,192 @@
+version: '2.2'
+services:
+  i2b2-medco-srv0:
+    extends:
+      file: ../docker-compose-common.yml
+      service: i2b2-medco
+    environment:
+      - I2B2_DB_NAME=i2b2medcosrv0
+      - I2B2_DOMAIN_NAME=i2b2medcosrv0
+      - NODE_IDX=0
+    ports:
+      - "8090:8080"
+    networks:
+      - medco-srv0
+      - medco-network
+      - keycloak-network
+    volumes:
+      - ../../configuration-profiles/test-local-3nodes:/medco-configuration
+
+  medco-unlynx-srv0:
+    extends:
+      file: ../docker-compose-common.yml
+      service: medco-unlynx
+    ports:
+      - "2000:2000"
+      - "2001:2001"
+    environment:
+      - NODE_IDX=0
+    networks:
+      - medco-srv0
+      - medco-network
+    volumes:
+      - ../../configuration-profiles/test-local-3nodes:/medco-configuration
+
+  i2b2-medco-srv1:
+    extends:
+      file: ../docker-compose-common.yml
+      service: i2b2-medco
+    environment:
+      - I2B2_DB_NAME=i2b2medcosrv1
+      - I2B2_DOMAIN_NAME=i2b2medcosrv1
+      - NODE_IDX=1
+    ports:
+      - "8091:8080"
+    networks:
+      - medco-srv1
+      - medco-network
+      - keycloak-network
+    volumes:
+      - ../../configuration-profiles/test-local-3nodes:/medco-configuration
+
+  medco-unlynx-srv1:
+    extends:
+      file: ../docker-compose-common.yml
+      service: medco-unlynx
+    ports:
+      - "2002:2002"
+      - "2003:2003"
+    environment:
+      - NODE_IDX=1
+    networks:
+      - medco-srv1
+      - medco-network
+    volumes:
+      - ../../configuration-profiles/test-local-3nodes:/medco-configuration
+
+  i2b2-medco-srv2:
+    extends:
+      file: ../docker-compose-common.yml
+      service: i2b2-medco
+    environment:
+      - I2B2_DB_NAME=i2b2medcosrv2
+      - I2B2_DOMAIN_NAME=i2b2medcosrv2
+      - NODE_IDX=2
+    ports:
+      - "8092:8080"
+    networks:
+      - medco-srv2
+      - medco-network
+      - keycloak-network
+    volumes:
+      - ../../configuration-profiles/test-local-3nodes:/medco-configuration
+
+  medco-unlynx-srv2:
+    extends:
+      file: ../docker-compose-common.yml
+      service: medco-unlynx
+    ports:
+      - "2004:2004"
+      - "2005:2005"
+    environment:
+      - NODE_IDX=2
+    networks:
+      - medco-srv2
+      - medco-network
+    volumes:
+      - ../../configuration-profiles/test-local-3nodes:/medco-configuration
+
+  glowing-bear:
+    extends:
+      file: ../docker-compose-common.yml
+      service: glowing-bear
+    ports:
+    - "82:80"
+    environment:
+    - GB_API_URL=${MEDCO_NODE_URL}/IRCT-CL/rest
+    - GB_URL=${MEDCO_NODE_URL}/glowing-bear
+    - GB_OIDC_URL=${MEDCO_NODE_URL}/auth/realms/master/protocol/openid-connect
+    - GB_OIDC_CLIENT_ID=i2b2-local
+    - GB_PICSURE_RES_NAME=i2b2-medco-local
+    - GB_COTHORITY_KEY_URL=${MEDCO_NODE_URL}/cothority-key.pub.toml
+    - GB_GENOMIC_ANNOTATIONS_URL=${MEDCO_NODE_URL}/genomicAnnotations
+    - GB_MEDCO_RESULTS_RANDOMIZATION=0
+    networks:
+      - keycloak-network
+
+  nginx:
+    extends:
+      file: ../docker-compose-common.yml
+      service: nginx
+    ports:
+    - "80:80"
+    - "443:443"
+    environment:
+    - HTTP_SCHEME=${HTTP_SCHEME}
+    networks:
+    - medco-srv0
+    - keycloak-network
+    volumes:
+    - ../../configuration-profiles/test-local-3nodes/group.toml:/medco-configuration/group.toml
+    - ../../configuration-profiles/test-local-3nodes/certificate.crt:/medco-configuration/certificate.crt
+    - ../../configuration-profiles/test-local-3nodes/certificate.key:/medco-configuration/certificate.key
+
+  php-fpm:
+    extends:
+      file: ../docker-compose-common.yml
+      service: php-fpm
+    environment:
+    - I2B2_DB_NAME=i2b2medcosrv0
+    - I2B2_DOMAIN_NAME=i2b2medcosrv0
+    - I2B2_URL=http://i2b2-medco-srv0:8080/i2b2/services
+    - CORS_ALLOW_ORIGIN=${MEDCO_NODE_URL}
+    networks:
+    - medco-srv0
+
+  postgresql:
+    extends:
+      file: ../docker-compose-common.yml
+      service: postgresql
+    ports:
+      - "5432:5432"
+    networks:
+      - medco-srv0
+      - medco-srv1
+      - medco-srv2
+      - keycloak-network
+
+  pg-admin:
+    extends:
+      file: ../docker-compose-common.yml
+      service: pg-admin
+    ports:
+      - "81:80"
+    networks:
+      - medco-srv0
+      - medco-srv1
+      - medco-srv2
+
+  keycloak:
+    extends:
+      file: ../docker-compose-common.yml
+      service: keycloak
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgresql
+    networks:
+      - keycloak-network
+
+networks:
+  medco-network:
+    driver: bridge
+
+  keycloak-network:
+    driver: bridge
+
+  medco-srv0:
+    driver: bridge
+  medco-srv1:
+    driver: bridge
+  medco-srv2:
+    driver: bridge
