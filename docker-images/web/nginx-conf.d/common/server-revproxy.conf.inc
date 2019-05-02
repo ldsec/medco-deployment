@@ -38,17 +38,32 @@ location /pgadmin {
     proxy_redirect http://$upstream_host/pgadmin /pgadmin;
 }
 
-location /IRCT-CL {
-    set $upstream_host irct;
+location /pic-sure-api-2 {
+
+    add_header 'Access-Control-Allow-Origin' "$http_origin";
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, HEAD, DELETE, OPTIONS';
+    add_header 'Access-Control-Allow-Headers' 'Authorization,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+    add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+
+    if ($request_method = OPTIONS) {
+        return 200;
+    }
+
+    set $upstream_host picsure;
     proxy_pass http://$upstream_host:8080;
 }
 
 location /i2b2 {
-    set $upstream_host i2b2-medco;
+    set $upstream_host i2b2;
     proxy_pass http://$upstream_host:8080;
 }
 
 location /glowing-bear {
-    set $upstream_host glowing-bear;
+    set $upstream_host glowing-bear-medco;
     proxy_pass http://$upstream_host;
+}
+
+location /medco-connector {
+    set $upstream_host medco-connector;
+    proxy_pass http://$upstream_host:1999;
 }
