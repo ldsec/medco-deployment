@@ -1,7 +1,7 @@
 version: '2.4'
 services:
   i2b2:
-    image: medco/i2b2:MedCo-v0.2.0
+    image: medco/i2b2:${I2B2_VERSION:-MedCo-v0.2.1}
     build:
       context: ../docker-images/i2b2
     environment:
@@ -17,7 +17,7 @@ services:
       - AXIS2_LOGLEVEL=INFO
 
   medco-unlynx:
-    image: medco/medco-unlynx:v0.2.0
+    image: medco/medco-unlynx:${MEDCO_UNLYNX_VERSION:-v0.2.1}
     ports:
     - "2000"
     - "2001"
@@ -28,7 +28,7 @@ services:
     - ../configuration-profiles/dev-local-3nodes:/medco-configuration
 
   nginx:
-    image: medco/nginx:MedCo-v0.2.0
+    image: medco/nginx:${NGINX_VERSION:-MedCo-v0.2.1}
     build:
       context: ../docker-images/web
       dockerfile: nginx.Dockerfile
@@ -37,13 +37,14 @@ services:
       - "443"
     environment:
       - HTTP_SCHEME=http
+      - ALL_TIMEOUTS_SECONDS=600
     volumes:
       - ../docker-images/web/www-data:/www-data
       - ../docker-images/web/nginx-conf.d:/etc/nginx/conf.d
       - ../configuration-profiles/dev-local-3nodes/group.toml:/medco-configuration/group.toml
 
   php-fpm:
-    image: medco/php-fpm:MedCo-v0.2.0
+    image: medco/php-fpm:${PHP_FPM_VERSION:-MedCo-v0.2.1}
     build:
       context: ../docker-images/web
       dockerfile: php-fpm.Dockerfile
@@ -69,7 +70,7 @@ services:
     - ../docker-images/postgresql/initdb-data:/docker-entrypoint-initdb.d
 
   pg-admin:
-    image: medco/pgadmin4:MedCo-v0.2.0
+    image: medco/pgadmin4:${PGADMIN_VERSION:-MedCo-v0.2.1}
     build:
       context: ../docker-images/pgadmin
     environment:
@@ -77,7 +78,7 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=admin
 
   keycloak:
-    image: medco/keycloak:MedCo-v0.2.0
+    image: medco/keycloak:${KEYCLOAK_VERSION:-MedCo-v0.2.1}
     build:
       context: ../docker-images/keycloak
     environment:
@@ -91,7 +92,7 @@ services:
       - DB_PASSWORD=keycloak
 
   glowing-bear-medco:
-    image: medco/glowing-bear-medco:v0.2.0
+    image: medco/glowing-bear-medco:${GLOWING_BEAR_MEDCO_VERSION:-v0.2.1}
     ports:
       - "80"
     environment:
@@ -107,7 +108,7 @@ services:
       - MEDCO_NODES_NAME=a,b,c
 
   picsure:
-    image: medco/picsure:MedCo-v0.2.0
+    image: medco/picsure:${PICSURE_VERSION:-MedCo-v0.2.1}
     build:
       context: ../docker-images/picsure
     environment:
@@ -124,23 +125,61 @@ services:
       - MEDCO_NETWORK_NAME=testnetwork
       - MEDCO_NODES_NAME=a,b,c
       - MEDCO_NODES_CONNECTOR_URL=http://medco-connector-srv0:1999/medco-connector/picsure2,http://medco-connector-srv1:1999/medco-connector/picsure2,http://medco-connector-srv2:1999/medco-connector/picsure2
+      - HTTP_CLIENT_TIMEOUT_SECONDS=600
 
   medco-connector:
-    image: medco/medco-connector:v0.2.0
+    image: medco/medco-connector:${MEDCO_CONNECTOR_VERSION:-v0.2.1}
     ports:
       - "1999"
     environment:
+      - SERVER_HTTP_WRITE_TIMEOUT_SECONDS=600
       - I2B2_HIVE_URL=http://i2b2:8080/i2b2/services
       - I2B2_LOGIN_DOMAIN=i2b2medco
       - I2B2_LOGIN_PROJECT=MedCo
       - I2B2_LOGIN_USER=medcouser
       - I2B2_LOGIN_PASSWORD=demouser
+      - I2B2_WAIT_TIME_SECONDS=450
       - LOG_LEVEL=3
       - UNLYNX_GROUP_FILE_PATH=/medco-configuration/group.toml
       - UNLYNX_GROUP_FILE_IDX=0
+      - UNLYNX_TIMEOUT_SECONDS=150
       - JWKS_URL=http://keycloak:8080/auth/realms/master/protocol/openid-connect/certs
       - OIDC_JWT_ISSUER=http://localhost/auth/realms/master
       - OIDC_CLIENT_ID=medco
       - OIDC_JWT_USER_ID_CLAIM=preferred_username
+      - MEDCO_OBFUSCATION_MIN=5
     volumes:
       - ../configuration-profiles/dev-local-3nodes:/medco-configuration
+
+  medco-cli-client:
+    image: medco/medco-cli-client:${MEDCO_CONNECTOR_VERSION:-v0.2.1}
+    environment:
+      - LOG_LEVEL=3
+      - UNLYNX_GROUP_FILE_PATH=/medco-configuration/group.toml
+      - UNLYNX_GROUP_FILE_IDX=0
+      - OIDC_CLIENT_ID=medco
+      - CLIENT_QUERY_TIMEOUT_SECONDS=660
+      - PICSURE2_API_HOST=localhost
+      - PICSURE2_API_BASE_PATH=/pic-sure-api-2/PICSURE
+      - PICSURE2_API_SCHEME=http
+      - PICSURE2_RESOURCES=MEDCO_testnetwork_0_a,MEDCO_testnetwork_1_b,MEDCO_testnetwork_2_c
+      - OIDC_REQ_TOKEN_URL=http://localhost/auth/realms/master/protocol/openid-connect/token
+    volumes:
+      - ../configuration-profiles/dev-local-3nodes:/medco-configuration
+    network_mode: host
+
+  medco-loader:
+    image: medco/medco-loader:${MEDCO_LOADER_VERSION:-v0.2.1}
+    environment:
+      - LOG_LEVEL=3
+      - UNLYNX_GROUP_FILE_PATH=/medco-configuration/group.toml
+      - UNLYNX_GROUP_FILE_IDX=0
+      - DB_HOST=localhost
+      - DB_PORT=5432
+      - DB_NAME=i2b2medco
+      - DB_USER=i2b2
+      - DB_PASSWORD=i2b2
+    volumes:
+      - ../resources/data:/data
+      - ../configuration-profiles/dev-local-3nodes:/medco-configuration
+    network_mode: host
