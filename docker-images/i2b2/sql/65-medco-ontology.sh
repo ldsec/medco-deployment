@@ -35,8 +35,8 @@ psql $PSQL_PARAMS -d "$I2B2_DB_NAME" <<-EOSQL
     insert into medco_ont.table_access (c_table_cd, c_table_name, c_protected_access, c_hlevel, c_fullname, c_name,
         c_synonym_cd, c_visualattributes, c_facttablecolumn, c_dimtablename,
         c_columnname, c_columndatatype, c_operator, c_dimcode, c_tooltip) VALUES
-        ('SENSITIVE_TAGGED', 'SENSITIVE_TAGGED', 'N', 1, '\medco\tagged\', 'MedCo Sensitive Tagged Ontology',
-        'N', 'CH', 'concept_cd', 'concept_dimension', 'concept_path', 'T', 'LIKE', '\medco\tagged\', 'MedCo Sensitive Tagged Ontology');
+        ('ENCRYPTED_TAGGED', 'ENCRYPTED_TAGGED', 'N', 1, '\medco\tagged\', 'MedCo Encrypted Tagged Ontology',
+        'N', 'CH', 'concept_cd', 'concept_dimension', 'concept_path', 'T', 'LIKE', '\medco\tagged\', 'MedCo Encrypted Tagged Ontology');
 
     -- schemes
     CREATE TABLE medco_ont.schemes(
@@ -47,14 +47,13 @@ psql $PSQL_PARAMS -d "$I2B2_DB_NAME" <<-EOSQL
     );
     ALTER TABLE medco_ont.schemes OWNER TO $I2B2_DB_USER;
 
-    -- todo: revise those schemes
     insert into medco_ont.schemes(c_key, c_name, c_description) values('TAG_ID:', 'TAG_ID', 'MedCo tag identifier');
     insert into medco_ont.schemes(c_key, c_name, c_description) values('ENC_ID:', 'ENC_ID', 'MedCo sensitive concept identifier (to be encrypted)');
     insert into medco_ont.schemes(c_key, c_name, c_description) values('CLEAR:', 'CLEAR', 'MedCo clear value');
     insert into medco_ont.schemes(c_key, c_name, c_description) values('GEN:', 'GEN', 'MedCo genomic annotations');
 
-    -- tagged sensitive ontology
-    CREATE TABLE medco_ont.sensitive_tagged (
+    -- tagged encrypted ontology
+    CREATE TABLE medco_ont.encrypted_tagged (
         c_hlevel numeric(22,0) not null,
         c_fullname character varying(900) not null,
         c_name character varying(2000) not null,
@@ -82,12 +81,12 @@ psql $PSQL_PARAMS -d "$I2B2_DB_NAME" <<-EOSQL
         c_symbol character varying(50),
         pcori_basecode character varying(50)
     );
-    ALTER TABLE medco_ont.sensitive_tagged OWNER TO $I2B2_DB_USER;
-    CREATE INDEX META_FULLNAME_IDX_sensitive_tagged ON medco_ont.sensitive_tagged(C_FULLNAME);
-    CREATE INDEX META_APPLIED_PATH_IDX_sensitive_tagged ON medco_ont.sensitive_tagged(M_APPLIED_PATH);
-    CREATE INDEX META_EXCLUSION_IDX_sensitive_tagged ON medco_ont.sensitive_tagged(M_EXCLUSION_CD);
-    CREATE INDEX META_HLEVEL_IDX_sensitive_tagged ON medco_ont.sensitive_tagged(C_HLEVEL);
-    CREATE INDEX META_SYNONYM_IDX_sensitive_tagged ON medco_ont.sensitive_tagged(C_SYNONYM_CD);
+    ALTER TABLE medco_ont.encrypted_tagged OWNER TO $I2B2_DB_USER;
+    CREATE INDEX META_FULLNAME_IDX_encrypted_tagged ON medco_ont.encrypted_tagged(C_FULLNAME);
+    CREATE INDEX META_APPLIED_PATH_IDX_encrypted_tagged ON medco_ont.encrypted_tagged(M_APPLIED_PATH);
+    CREATE INDEX META_EXCLUSION_IDX_encrypted_tagged ON medco_ont.encrypted_tagged(M_EXCLUSION_CD);
+    CREATE INDEX META_HLEVEL_IDX_encrypted_tagged ON medco_ont.encrypted_tagged(C_HLEVEL);
+    CREATE INDEX META_SYNONYM_IDX_encrypted_tagged ON medco_ont.encrypted_tagged(C_SYNONYM_CD);
 
     -- permissions
     grant all on schema medco_ont to $I2B2_DB_USER;
