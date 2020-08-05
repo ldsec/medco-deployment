@@ -13,4 +13,5 @@ EOSQL
 }
 
 # init demo i2b2 database
-initSchema $I2B2_DB_NAME medco_ont
+initSchema $I2B2_DB_NAME medco_ont_sensitive
+initSchema $I2B2_DB_NAME medco_ont_non_sensitive
